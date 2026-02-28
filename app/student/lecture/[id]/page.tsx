@@ -82,35 +82,58 @@ setLoaded(true);
   }, [loaded]);
 
   // 3) 앞으로 점프(seek) 막기
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
+// 3) 앞으로 점프(seek) 막기
+useEffect(() => {
+  const v = videoRef.current;
+  if (!v) return;
 
-    const onSeeking = () => {
-      const maxAllowed = maxAllowedRef.current;
+  let forcing = false;
 
-      // 앞으로 가려고 하면 되돌림
-      if (v.currentTime > maxAllowed + FORWARD_BUFFER) {
-        v.currentTime = maxAllowed;
-      }
-    };
+  const clampIfForward = () => {
+    const maxAllowed = maxAllowedRef.current;
+    if (v.currentTime > maxAllowed + FORWARD_BUFFER) {
+      forcing = true;
+      v.currentTime = maxAllowed;
+      // 다음 tick에서 forcing 해제 (무한루프 방지)
+      setTimeout(() => (forcing = false), 0);
+      return true;
+    }
+    return false;
+  };
 
-    // 자연재생으로 시간이 진행되면 maxAllowed 갱신
-    const onTimeUpdate = () => {
-      // 자연스럽게 진행된 경우에만 "최대 시청 위치" 업데이트
-      if (v.currentTime > maxAllowedRef.current) {
-        maxAllowedRef.current = v.currentTime;
-      }
-    };
+  const onSeeking = () => {
+    if (forcing) return;
+    clampIfForward();
+  };
 
-    v.addEventListener("seeking", onSeeking);
-    v.addEventListener("timeupdate", onTimeUpdate);
+  const onSeeked = () => {
+    if (forcing) return;
+    clampIfForward();
+  };
 
-    return () => {
-      v.removeEventListener("seeking", onSeeking);
-      v.removeEventListener("timeupdate", onTimeUpdate);
-    };
-  }, [loaded]);
+  // ✅ 핵심: timeupdate에서도 앞으로 점프를 계속 감시해서 "순간 통과"를 막음
+  const onTimeUpdate = () => {
+    if (forcing) return;
+
+    // 앞으로 점프 감지되면 바로 되돌림
+    if (clampIfForward()) return;
+
+    // 자연 재생으로만 maxAllowed 갱신
+    if (v.currentTime > maxAllowedRef.current) {
+      maxAllowedRef.current = v.currentTime;
+    }
+  };
+
+  v.addEventListener("seeking", onSeeking);
+  v.addEventListener("seeked", onSeeked);
+  v.addEventListener("timeupdate", onTimeUpdate);
+
+  return () => {
+    v.removeEventListener("seeking", onSeeking);
+    v.removeEventListener("seeked", onSeeked);
+    v.removeEventListener("timeupdate", onTimeUpdate);
+  };
+}, [loaded]);
 
   // 4) 5초마다 진행률 서버 저장 (이미 max_watched 기반 저장 로직 있음)
   useEffect(() => {
