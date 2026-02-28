@@ -58,9 +58,6 @@ const { url } = await presignRes.json();
 // 3️⃣ 브라우저 → R2 직접 업로드
 const putRes = await fetch(url, {
   method: "PUT",
-  headers: {
-    "Content-Type": file.type,
-  },
   body: file,
 });
 
