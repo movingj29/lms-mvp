@@ -185,7 +185,7 @@ export default function StudentLecturesPage() {
             {lectures.length === 0 ? (
               <tr>
                 <td colSpan={2} style={{ padding: 18, color: "rgba(255,255,255,0.65)" }}>
-                  아직 강의가 없어. 선생님이 강의를 등록하면 여기에 뜰 거야.
+                  강의가 없음.
                 </td>
               </tr>
             ) : (
