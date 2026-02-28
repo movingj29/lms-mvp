@@ -26,21 +26,56 @@ export default function UploadLecturePage() {
         return;
       }
 
-      const path = `${user.id}/${Date.now()}-${file.name}`;
+const path = `${user.id}/${Date.now()}-${file.name}`;
 
-      const { error: upErr } = await supabase.storage
-        .from("videos")
-        .upload(path, file, { upsert: false });
+// 1️⃣ 로그인 토큰 가져오기
+const { data: sess } = await supabase.auth.getSession();
+const token = sess.session?.access_token;
+if (!token) {
+  alert("로그인부터 해야 함");
+  return;
+}
 
-      if (upErr) throw upErr;
+// 2️⃣ presigned PUT URL 요청
+const presignRes = await fetch("/api/r2/presign-upload", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    key: path,
+    contentType: file.type,
+  }),
+});
 
-      const { error: dbErr } = await supabase.from("lectures").insert({
-        title,
-        video_path: path,
-        created_by: user.id,
-      });
+if (!presignRes.ok) {
+  throw new Error(await presignRes.text());
+}
 
-      if (dbErr) throw dbErr;
+const { url } = await presignRes.json();
+
+// 3️⃣ 브라우저 → R2 직접 업로드
+const putRes = await fetch(url, {
+  method: "PUT",
+  headers: {
+    "Content-Type": file.type,
+  },
+  body: file,
+});
+
+if (!putRes.ok) {
+  throw new Error("R2 업로드 실패");
+}
+
+// 4️⃣ DB에는 key만 저장
+const { error: dbErr } = await supabase.from("lectures").insert({
+  title,
+  video_path: path,   // 🔥 URL 아님, key 저장
+  created_by: user.id,
+});
+
+if (dbErr) throw dbErr;
 
       alert("업로드 완료!");
       setTitle("");

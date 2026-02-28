@@ -55,16 +55,15 @@ export default function LecturePlayerPage() {
       maxAllowedRef.current = prog?.max_watched_sec ?? 0;
 
       // 비공개 버킷이면 signed URL로 재생
-      const { data: urlData, error: urlErr } = await supabase.storage
-        .from("videos")
-        .createSignedUrl(lec.video_path, 60 * 60);
-
-      if (urlErr) {
-        alert(urlErr.message);
-        return;
-      }
-      setSignedUrl(urlData.signedUrl);
-      setLoaded(true);
+// ✅ R2 presigned GET URL로 재생 (lec.video_path = R2 key)
+const res = await fetch(`/api/r2/presign-play?key=${encodeURIComponent(lec.video_path)}`);
+if (!res.ok) {
+  alert("재생 URL 생성 실패: " + (await res.text()));
+  return;
+}
+const { url } = await res.json();
+setSignedUrl(url);
+setLoaded(true);
     })();
   }, [id, router]);
 
