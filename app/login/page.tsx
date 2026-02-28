@@ -1,14 +1,14 @@
 "use client";
 
 import { getMyRole } from "../../lib/getRole";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
 
   async function signUp() {
@@ -36,152 +36,183 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-  (async () => {
-    const role = await getMyRole();
-    if (!role) return; // 로그인 안됨이면 그대로 로그인 페이지
-    if (role === "teacher") router.replace("/teacher/dashboard");
-    else router.replace("/student/lectures");
-  })();
-}, [router]);
-  
-return (
-  <div
-    style={{
-      minHeight: "100vh",
-      padding: "40px 20px",
-      background:
-        "radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(900px 500px at 90% 10%, rgba(16,185,129,0.18), transparent 60%), #0b0f17",
-      color: "rgba(255,255,255,0.92)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <div style={{ width: "100%", maxWidth: 440 }}>
-      {/* Title */}
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>
-          LMS 로그인
-        </h1>
-        <p style={{ marginTop: 8, marginBottom: 0, color: "rgba(255,255,255,0.65)", fontSize: 14 }}>
-          이메일로 로그인하거나, 처음이면 가입 후 로그인.
-        </p>
-      </div>
+    (async () => {
+      const role = await getMyRole();
+      if (!role) {
+        setChecking(false);
+        return;
+      }
+      if (role === "teacher") router.replace("/teacher/dashboard");
+      else router.replace("/student/lectures");
+    })();
+  }, [router]);
 
-      {/* Card */}
-      <div
-        style={{
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: "rgba(255,255,255,0.06)",
-          borderRadius: 16,
-          padding: 18,
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-        }}
-      >
-        {/* Email */}
-        <div style={{ marginTop: 10 }}>
-          <label style={{ display: "block", fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
-            EMAIL
-          </label>
-          <input
-            placeholder="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+  if (checking) return null;
+
+  return (
+    <div
+      style={{
+        minHeight: "100svh",
+        overflow: "hidden",
+        padding: "40px 20px",
+        background:
+          "radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(900px 500px at 90% 10%, rgba(16,185,129,0.18), transparent 60%), #0b0f17",
+        color: "rgba(255,255,255,0.92)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        <div style={{ marginBottom: 16, textAlign: "center" }}>
+          <h1
             style={{
-              width: "100%",
-              padding: "12px 12px",
-              borderRadius: 12,
-              outline: "none",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
+              fontSize: 30,
+              fontWeight: 800,
+              margin: 0,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            LMS 로그인
+          </h1>
+          <p
+            style={{
+              marginTop: 8,
+              marginBottom: 0,
+              color: "rgba(255,255,255,0.65)",
               fontSize: 14,
             }}
-          />
-        </div>
-
-        {/* Password */}
-        <div style={{ marginTop: 14 }}>
-          <label style={{ display: "block", fontSize: 12, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
-            PASSWORD
-          </label>
-          <input
-            placeholder="password"
-            type="password"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "12px 12px",
-              borderRadius: 12,
-              outline: "none",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              fontSize: 14,
-            }}
-          />
-        </div>
-
-        {/* Buttons */}
-        <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-          <button
-            onClick={signIn}
-            style={{
-              flex: 1,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "linear-gradient(90deg, rgba(99,102,241,0.92), rgba(16,185,129,0.75))",
-              color: "rgba(255,255,255,0.92)",
-              borderRadius: 12,
-              padding: "12px 12px",
-              cursor: "pointer",
-              fontWeight: 700,
-              transition: "transform 120ms ease, filter 120ms ease",
-            }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.05)")}
-            onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
           >
-            로그인
-          </button>
+            이메일로 로그인하거나, 처음이면 가입 후 로그인.
+          </p>
+        </div>
 
-          <button
-            onClick={signUp}
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(255,255,255,0.06)",
+            borderRadius: 16,
+            padding: 18,
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div style={{ marginTop: 10 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: 12,
+                color: "rgba(255,255,255,0.55)",
+                marginBottom: 8,
+              }}
+            >
+              EMAIL
+            </label>
+            <input
+              placeholder="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 12px",
+                borderRadius: 12,
+                outline: "none",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.92)",
+                fontSize: 14,
+              }}
+            />
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: 12,
+                color: "rgba(255,255,255,0.55)",
+                marginBottom: 8,
+              }}
+            >
+              PASSWORD
+            </label>
+            <input
+              placeholder="password"
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 12px",
+                borderRadius: 12,
+                outline: "none",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.92)",
+                fontSize: 14,
+              }}
+            />
+          </div>
+
+          <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+            <button
+              onClick={signIn}
+              style={{
+                flex: 1,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background:
+                  "linear-gradient(90deg, rgba(99,102,241,0.92), rgba(16,185,129,0.75))",
+                color: "rgba(255,255,255,0.92)",
+                borderRadius: 12,
+                padding: "12px 12px",
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              로그인
+            </button>
+
+            <button
+              onClick={signUp}
+              style={{
+                flex: 1,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.78)",
+                borderRadius: 12,
+                padding: "12px 12px",
+                cursor: "pointer",
+                fontWeight: 650,
+              }}
+            >
+              가입
+            </button>
+          </div>
+
+          <div
             style={{
-              flex: 1,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.78)",
-              borderRadius: 12,
-              padding: "12px 12px",
-              cursor: "pointer",
-              backdropFilter: "blur(6px)",
-              transition: "background 120ms ease, transform 120ms ease",
-              fontWeight: 650,
+              marginTop: 14,
+              fontSize: 12,
+              color: "rgba(255,255,255,0.55)",
+              lineHeight: 1.5,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            가입
-          </button>
+            <div>• 가입 후 바로 로그인.</div>
+            <div>• 로그인하면 역할에 따라 자동 이동.</div>
+          </div>
         </div>
 
-        {/* Footer hint */}
-        <div style={{ marginTop: 14, fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}>
-          <div>• 가입 후 바로 로그인.</div>
-          <div>• 로그인하면 역할에 따라 학생/선생 대시보드로 자동 이동.</div>
+        <div
+          style={{
+            marginTop: 14,
+            color: "rgba(255,255,255,0.45)",
+            fontSize: 12,
+            textAlign: "center",
+          }}
+        >
+          © awesomeeric · lms
         </div>
-      </div>
-
-      {/* Small brand-ish footer */}
-      <div style={{ marginTop: 14, color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
-        © aweso · lms-mvp
       </div>
     </div>
-  </div>
-);
+  );
 }
