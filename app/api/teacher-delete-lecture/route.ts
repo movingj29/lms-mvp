@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+
+export const runtime = "nodejs";
+
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT!,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
 
 export async function DELETE(req: Request) {
   try {
@@ -39,6 +51,27 @@ export async function DELETE(req: Request) {
     if (lecErr) return NextResponse.json({ error: lecErr.message }, { status: 400 });
     if (!lecture) return NextResponse.json({ error: "Lecture not found" }, { status: 404 });
 
+    const videoKey = lecture.video_path || "";
+
+    // ✅ (추천) 먼저 R2 파일 삭제 시도
+    // - R2 삭제가 실패하면 DB는 남겨두는게 관리상 더 깔끔함(유령 파일 방지)
+    // - 단, "DB 삭제 우선"을 원하면 순서 바꿔도 됨
+    if (videoKey) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.R2_BUCKET!,
+            Key: videoKey,
+          })
+        );
+      } catch (e: any) {
+        return NextResponse.json(
+          { error: `R2 delete failed: ${e?.message ?? String(e)}` },
+          { status: 500 }
+        );
+      }
+    }
+
     // 4) 진도 데이터 삭제 (watch_progress)
     const { error: wpErr } = await supabaseAdmin
       .from("watch_progress")
@@ -50,15 +83,6 @@ export async function DELETE(req: Request) {
     // 5) lectures 삭제
     const { error: delErr } = await supabaseAdmin.from("lectures").delete().eq("id", lectureId);
     if (delErr) return NextResponse.json({ error: delErr.message }, { status: 400 });
-
-    // 6) 스토리지 영상 삭제
-    if (lecture.video_path) {
-      const { error: stErr } = await supabaseAdmin.storage.from("videos").remove([lecture.video_path]);
-      if (stErr) {
-        // DB는 이미 삭제됐으니, 스토리지만 실패해도 오류로 막진 않고 경고만 반환 가능
-        return NextResponse.json({ ok: true, warning: stErr.message });
-      }
-    }
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
